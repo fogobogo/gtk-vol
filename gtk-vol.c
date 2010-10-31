@@ -56,7 +56,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define ICON_HIGH   "audio-volume-high"
 
 #define SET_VOL     0 /* whether or not to set an inital volume  0 = nope, 1 = yay */
-#define VOL_STEP    1
+#define VOLUME_STEP    1
 #define VOLUME      0 /* startup volume */
 
 typedef struct {
@@ -77,18 +77,18 @@ tray_icon_set_from_vol(GtkStatusIcon *icon)
         gtk_status_icon_set_from_icon_name(icon, ICON_MUTE); 
     }
 
-    if(vol.l > 0 && vol.l <= 33
-    || vol.r > 0 && vol.r <= 33) {
+    if((vol.l > 0 && vol.l <= 33)
+    || (vol.r > 0 && vol.r <= 33)) {
         gtk_status_icon_set_from_icon_name(icon, ICON_LOW);
     }
 
-    if(vol.l > 33 && vol.l <= 66
-    || vol.r > 33 && vol.r <= 66) {
+    if((vol.l > 33 && vol.l <= 66)
+    || (vol.r > 33 && vol.r <= 66)) {
         gtk_status_icon_set_from_icon_name(icon, ICON_MEDIUM); 
     }
 
-    if(vol.l > 66 && vol.l <= 100
-    || vol.r > 66 && vol.r <= 100) {
+    if((vol.l > 66 && vol.l <= 100)
+    || (vol.r > 66 && vol.r <= 100)) {
         gtk_status_icon_set_from_icon_name(icon, ICON_HIGH); 
     }
 
@@ -114,15 +114,14 @@ tray_icon_set_tooltip(GtkStatusIcon *icon) {
     gtk_status_icon_set_tooltip(icon, tooltip);
 }
 
-
 void 
 tray_icon_on_scroll(GtkStatusIcon *icon, 
         GdkEventScroll *event,
         gpointer user_data)
 {
     if(event->direction == GDK_SCROLL_UP) {
-        vol.l += VOL_STEP;
-        vol.r += VOL_STEP;
+        vol.l += VOLUME_STEP;
+        vol.r += VOLUME_STEP;
     }
 
     if(event->direction == GDK_SCROLL_DOWN) {
@@ -136,8 +135,8 @@ tray_icon_on_scroll(GtkStatusIcon *icon,
         }
 
         else {
-            vol.l -= VOL_STEP;
-            vol.r -= VOL_STEP;
+            vol.l -= VOLUME_STEP;
+            vol.r -= VOLUME_STEP;
         }
     }
 
@@ -171,6 +170,12 @@ tray_icon_on_click(GtkStatusIcon *icon, GdkEventButton event,
     ioctl(fd, MIXER_WRITE(CONTROL), &vol);
 }
 
+void
+tray_icon_update(GtkStatusIcon *icon) {
+    ioctl(fd, MIXER_READ(CONTROL), &vol);
+    tray_icon_set_from_vol(icon);
+    tray_icon_set_tooltip(icon);
+}
 
 GtkStatusIcon* 
 create_tray_icon() 
@@ -208,6 +213,7 @@ int main(int argc, char **argv) {
 
     gtk_init(&argc, &argv);
     tray_icon = create_tray_icon(&vol);
+	g_timeout_add_seconds(1,(GSourceFunc)tray_icon_update, tray_icon); //For update icon, if volume changed from other app
     gtk_main();
 
     close(fd);
