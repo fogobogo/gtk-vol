@@ -1,0 +1,11 @@
+gtk-vol
+
+A simple volume wheel that resides in the systray. 
+
+Features:
+
+* no annoying right-click menu (yeah, thats a feature!)
+* no pop-ups! (e.g. mixer controls)
+* easily mute and restore your volume
+
+The idea is just to keep it simple ;)
