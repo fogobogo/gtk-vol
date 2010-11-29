@@ -215,7 +215,7 @@ int main(int argc, char **argv) {
     gtk_init(&argc, &argv);
     tray_icon = create_tray_icon(&vol);
     /* in case a keycombo or another application is used to change the volume:  
-    *  read out volume every second and apply the correct tooltip / icon */
+    *  read out volume every second and apply the correct tooltip/icon */
 	g_timeout_add_seconds(1,(GSourceFunc)tray_icon_check_for_update, tray_icon);
     gtk_main();
 
