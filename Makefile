@@ -18,6 +18,7 @@ obj:
 	$(CC) -c $(CFLAGS) $(SOURCES) -o $(OBJECTS)
 
 install: 
+	install -d $(DESTDIR)$(PREFIX)$(BINDIR) # create directory if nonexistant 
 	install $(EXECUTABLE) $(DESTDIR)$(PREFIX)$(BINDIR)
 
 clean:
