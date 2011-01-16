@@ -1,6 +1,8 @@
 CC=gcc
-CFLAGS=`pkg-config --cflags gtk+-2.0`
+CFLAGS=`pkg-config --cflags gtk+-2.0` -Wall -Os
 LDFLAGS=`pkg-config --libs gtk+-2.0`
+
+PREFIX=/usr/local
 
 SOURCES=gtk-vol.c
 OBJECTS=$(SOURCES:.c=.o)
@@ -13,6 +15,9 @@ bin :
 
 obj:
 	$(CC) -c $(CFLAGS) $(SOURCES) -o $(OBJECTS)
+
+install: 
+	install -d $(DESTDIR)$(PREFIX)/bin/$(EXECUTABLE)
 
 clean:
 	rm $(EXECUTABLE) $(OBJECTS)
