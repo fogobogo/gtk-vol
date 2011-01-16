@@ -35,6 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <fcntl.h>
 #include <stropts.h>            /* ioctl() */
 #include <linux/soundcard.h>
+#include <errno.h>              /* errno */
 #include <gtk/gtk.h>
 #include <glib/gprintf.h>
 
@@ -45,6 +46,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define CONTROL MASTER
 
+/* some icon sets have a panel-* version too. e.g. "panel-audio-volume-muted" */
 #define ICON_MUTE   "audio-volume-muted"
 #define ICON_LOW    "audio-volume-low"
 #define ICON_MEDIUM "audio-volume-medium"
@@ -52,14 +54,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define VOLUME_STEP    1
 
-typedef struct {
+struct volume {
     guint8 l;
     guint8 r;
-} volume;
+};
 
 int fd;
-volume vol;
-volume store;
+struct volume vol;
+struct volume store;
 
 
 void 
@@ -107,10 +109,9 @@ tray_icon_set_tooltip(GtkStatusIcon *icon) {
     gtk_status_icon_set_tooltip(icon, tooltip);
 }
 
+
 void 
-tray_icon_on_scroll(GtkStatusIcon *icon, 
-        GdkEventScroll *event,
-        gpointer user_data)
+tray_icon_on_scroll(GtkStatusIcon *icon, GdkEventScroll *event, gpointer user_data)
 {
     if(event->direction == GDK_SCROLL_UP) {
         vol.l += VOLUME_STEP;
@@ -133,15 +134,17 @@ tray_icon_on_scroll(GtkStatusIcon *icon,
         }
     }
 
-    ioctl(fd, MIXER_WRITE(CONTROL), &vol);
+    if(ioctl(fd, MIXER_WRITE(CONTROL), &vol) == -1) {
+        fprintf(stderr, "error: %s\n", strerror(errno));
+    }
+
     tray_icon_set_from_vol(icon);
     tray_icon_set_tooltip(icon);
 }
 
 
 void 
-tray_icon_on_click(GtkStatusIcon *icon, GdkEventButton event,
-        gpointer user_data)
+tray_icon_on_click(GtkStatusIcon *icon, GdkEventButton event, gpointer user_data)
 {
 
     /* store volume and mute */
@@ -160,14 +163,21 @@ tray_icon_on_click(GtkStatusIcon *icon, GdkEventButton event,
     }
 
     tray_icon_set_from_vol(icon);
-    ioctl(fd, MIXER_WRITE(CONTROL), &vol);
+
+    if(ioctl(fd, MIXER_WRITE(CONTROL), &vol) == -1) {
+        fprintf(stderr, "error: %s\n", strerror(errno));
+    }
 }
 
-void
-tray_icon_check_for_update(GtkStatusIcon **icon) {
-    volume now;
 
-    ioctl(fd, MIXER_READ(CONTROL), &now);
+void
+tray_icon_check_for_update(GtkStatusIcon **icon) 
+{
+    struct volume now;
+
+    if(ioctl(fd, MIXER_READ(CONTROL), &now) == -1) {
+        fprintf(stderr, "error: %s\n", strerror(errno));
+    }
 
     if(now.l != vol.l || now.r != vol.r) {
         vol.l = now.l;
@@ -177,6 +187,7 @@ tray_icon_check_for_update(GtkStatusIcon **icon) {
         tray_icon_set_tooltip((*icon));
     }
 }
+
 
 GtkStatusIcon* 
 create_tray_icon() 
@@ -199,6 +210,7 @@ create_tray_icon()
     return tray_icon;
 }
 
+
 int main(int argc, char **argv) {
 
     GtkStatusIcon *tray_icon;
@@ -206,11 +218,13 @@ int main(int argc, char **argv) {
     fd = open(DEVICE, O_RDWR, 0);
 
     if(fd < 0) {
-        fprintf(stderr, "could not open that crappy ghettoblaster!.\n");
+        fprintf(stderr, "error opening device file. %s\n",strerror(errno));
     }
 
     /* read out current volume */
-    ioctl(fd, MIXER_READ(CONTROL), &vol);
+    if(ioctl(fd, MIXER_READ(CONTROL), &vol) == -1) {
+        fprintf(stderr, "error: %s\n", strerror(errno));
+    }
 
     gtk_init(&argc, &argv);
     tray_icon = create_tray_icon(&vol);
@@ -223,3 +237,4 @@ int main(int argc, char **argv) {
 
     return 0;
 }
+
