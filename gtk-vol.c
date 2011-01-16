@@ -27,7 +27,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 
-/* gcc gtk-vol.c -o gtk-vol `pkg-config --cflags --libs gtk+-2.0` */
+/* gcc gtk-vol.c -o gtk-vol $(pkg-config --cflags --libs gtk+-2.0) */
 
 #include <stdio.h>
 #include <string.h>             /* strlen */
@@ -164,7 +164,7 @@ tray_icon_on_click(GtkStatusIcon *icon, GdkEventButton event,
 }
 
 void
-tray_icon_check_for_update(GtkStatusIcon *icon) {
+tray_icon_check_for_update(GtkStatusIcon **icon) {
     volume now;
 
     ioctl(fd, MIXER_READ(CONTROL), &now);
@@ -173,8 +173,8 @@ tray_icon_check_for_update(GtkStatusIcon *icon) {
         vol.l = now.l;
         vol.r = now.r;
 
-        tray_icon_set_from_vol(icon);
-        tray_icon_set_tooltip(icon);
+        tray_icon_set_from_vol((*icon));
+        tray_icon_set_tooltip((*icon));
     }
 }
 
@@ -216,7 +216,7 @@ int main(int argc, char **argv) {
     tray_icon = create_tray_icon(&vol);
     /* in case a keycombo or another application is used to change the volume:  
     *  read out volume every second and apply the correct tooltip/icon */
-	g_timeout_add_seconds(1,(GSourceFunc)tray_icon_check_for_update, tray_icon);
+	g_timeout_add_seconds(1,(GSourceFunc)tray_icon_check_for_update, &tray_icon);
     gtk_main();
 
     close(fd);
