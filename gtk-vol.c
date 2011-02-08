@@ -160,13 +160,16 @@ tray_icon_on_click(GtkStatusIcon *icon, GdkEventButton event, gpointer user_data
     else if(vol.l == 0 && vol.r == 0) {
         vol.l = store.l;
         vol.r = store.r;
+        tray_icon_set_tooltip(icon);
     }
 
-    tray_icon_set_from_vol(icon);
 
     if(ioctl(fd, MIXER_WRITE(CONTROL), &vol) == -1) {
         fprintf(stderr, "error: %s\n", strerror(errno));
     }
+    
+    tray_icon_set_from_vol(icon);
+
 }
 
 
